@@ -1,4 +1,6 @@
 ﻿
+using System.Collections.Specialized;
+
 namespace MyProgram
 {
     class Program
@@ -156,9 +158,16 @@ namespace MyProgram
             }
 
             // Формирование информационного сообщения о пересекающихся файлах
-            string info = cross.Count == 0 ? "Пересекающихся кластеров нет" :
-                string.Join("", cross.OrderByDescending(x => x.Item2.Length)
-                .Select((x, i) => $"{(i == 0 ? $"Файлы {x.Item2} пересекаются в кластерах:" : "")}\n{x.Item1.Item1}   {x.Item1.Item2}"));
+            string info = "";
+
+            if (cross.Count == 0)
+            {
+                info = "Пересекающихся кластеров нет";
+            }
+            else
+            {
+                info = string.Join("", cross.Select((x, i) => $"{(i == 0 ? $"Файлы {x.Item2} пересекаются в кластерах:" : "")}\n{x.Item1.Item1}  {x.Item1.Item2}"));
+            }
 
             Console.WriteLine(info);
         }
