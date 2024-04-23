@@ -1,12 +1,19 @@
 ﻿
+using System;
 using System.Collections.Specialized;
+using System.Text;
 
 namespace MyProgram
 {
     class Program
     {
+       public static List<Tuple<object, object>> lost = new List<Tuple<object, object>>();
+       private static List<Tuple<object, object>> freeClusters = new List<Tuple<object, object>>();
+
         public static void Main()
         {
+
+            
             string eof = "eof";
             string bad = "bad";
             string empty = "empty";
@@ -25,6 +32,10 @@ namespace MyProgram
                 mT(17, 12),
                 mT(12, 13),
                 mT(13, eof)
+                //mT(22, empty),
+                //mT(23, 24),
+                //mT(24, 12),
+                //mT(25, empty),
             };
 
             List<Tuple<object, object>> C = new List<Tuple<object, object>>()
@@ -56,10 +67,10 @@ namespace MyProgram
                 mT(8, bad),
                 mT(9, 19),
                 mT(10, 11),
-                mT(11, 12),
+                mT(11, 14),
                 mT(12, 13),
                 mT(13, eof),
-                mT(14, empty),
+                mT(14, eof),
                 mT(15, 9),
                 mT(16, 17),
                 mT(17, 12),
@@ -82,6 +93,21 @@ namespace MyProgram
             crossFiles(A, B, C, D, FAT);
             badFiles(A, B, C, D, FAT);
             lostFiles(A, B, C, D, FAT);
+
+            string resultA = CheckEndOfFileMarker(A);
+            string resultB = CheckEndOfFileMarker(B);
+            string resultC = CheckEndOfFileMarker(C);
+            string resultD = CheckEndOfFileMarker(D);
+
+            Console.WriteLine(resultA + " A");
+            Console.WriteLine(resultB + " B");
+            Console.WriteLine(resultC + " C");
+            Console.WriteLine(resultD + " D");
+
+           
+            CreateAndPrintList(lost);
+           
+
         }
 
         private static Tuple<object, object> mT(object a, object b)
@@ -101,7 +127,7 @@ namespace MyProgram
             // Инициализация переменных для подсчета и хранения потерянных файлов
 
             int countFree = 0;
-            List<Tuple<object, object>> lost = new List<Tuple<object, object>>();
+            
 
             try
             {
@@ -110,8 +136,9 @@ namespace MyProgram
                     !(x.Item2.ToString() == empty || x.Item2.ToString() == bad)).ToList();
 
                 // Подсчет количества свободных кластеров
+                freeClusters = FAT.Where(x => x.Item2.ToString() == empty).ToList();
 
-                countFree = FAT.Count(x => x.Item2.ToString() == empty);
+                countFree = freeClusters.Count;
 
                 // Формирование информационного сообщения о потерянных файлах
                 string info = "\nПотерянные кластеры: \n";
@@ -124,7 +151,7 @@ namespace MyProgram
                 {
                     info = "Потерянных кластеров не найдено.";
                 }
-                info += $"\n\nКоличество свободных кластеров: {countFree}";
+                info += $"\n\nКоличество свободных кластеров: {countFree}\n";
 
                 // Вывод информационного сообщения
                 Console.WriteLine(info);
@@ -168,7 +195,7 @@ namespace MyProgram
             {
                 info = string.Join("", cross.Select((x, i) => $"{(i == 0 ? $"Файлы {x.Item2} пересекаются в кластерах:" : "")}\n{x.Item1.Item1}  {x.Item1.Item2}"));
             }
-
+            
             Console.WriteLine(info);
         }
 
@@ -192,5 +219,63 @@ namespace MyProgram
             }
             Console.WriteLine(info);
         }
+
+        public static string CheckEndOfFileMarker(List<Tuple<object, object>> records)
+        {
+            if (records.Count == 0)
+            {
+                return "Список записей пуст";
+            }
+
+            var lastRecord = records.Last();
+            if (lastRecord.Item2.ToString() == "eof")
+            {
+                return "Запись 'eof' найдена в конце файла";
+            }
+            else
+            {
+                return "Запись 'eof' не найдена в конце файла";
+            }
+        }
+
+        private static void CreateAndPrintList(List<Tuple<object, object>> lostClusters)
+        {
+            List<Tuple<object, object>> C = new List<Tuple<object, object>>();
+
+            int numOfEofMarkers = lostClusters.Count(t => t.Item2.ToString() == "eof");
+
+            for (int j = 0; j < numOfEofMarkers; j++)
+            {
+                List<Tuple<object, object>> tempC = new List<Tuple<object, object>>();
+
+                for (int i = 0; i < lostClusters.Count; i++)
+                {
+                    if (lostClusters[i].Item2.ToString() == "eof")
+                    {
+                        tempC.Add(mT(lostClusters[i].Item1, lostClusters[i].Item2));
+                        break;
+                    }
+                    else
+                    {
+                        tempC.Add(mT(lostClusters[i].Item1, lostClusters[i].Item2)); 
+                    } 
+                }
+
+                C.AddRange(tempC);
+                
+                Console.WriteLine($"\nНовый файл {j +1}:") ;
+                foreach (var tuple in C)
+                {
+                    Console.WriteLine($"mT({tuple.Item1}, {tuple.Item2});");
+                }
+                C.Clear();
+                foreach (var tuple in tempC)
+                {
+                    lostClusters.Remove(tuple);
+                }
+            }  
+        }
+
+        
     }
 }
