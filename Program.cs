@@ -1,5 +1,6 @@
 ﻿
 using System;
+using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Text;
 
@@ -9,7 +10,8 @@ namespace MyProgram
     {
        public static List<Tuple<object, object>> lost = new List<Tuple<object, object>>();
        private static List<Tuple<object, object>> freeClusters = new List<Tuple<object, object>>();
-
+       private static List<Tuple<Tuple<object, object>, string>> cross = new List<Tuple<Tuple<object, object>, string>>();
+       private static string myString = "";
         public static void Main()
         {
 
@@ -106,7 +108,8 @@ namespace MyProgram
 
            
             CreateAndPrintList(lost);
-           
+
+            ResolveIntersectingChain(D, cross.Select(c => Tuple.Create(c.Item1.Item1, c.Item1.Item2)).ToList(), ref freeClusters);
 
         }
 
@@ -167,7 +170,7 @@ namespace MyProgram
                                        List<Tuple<object, object>> D, List<Tuple<object, object>> FAT)
         {
             // Инициализация списка для хранения пересекающихся файлов
-            List<Tuple<Tuple<object, object>, string>> cross = new List<Tuple<Tuple<object, object>, string>>();
+            //List<Tuple<Tuple<object, object>, string>> cross = new List<Tuple<Tuple<object, object>, string>>();
 
             // Поиск пересекающихся файлов в FAT
             foreach (var fat in FAT)
@@ -181,6 +184,7 @@ namespace MyProgram
                 if (crossFat.Length > 2)
                 {
                     cross.Add(Tuple.Create(fat, crossFat));
+                    //char firstCharacter = myString[0];
                 }
             }
 
@@ -276,6 +280,49 @@ namespace MyProgram
             }  
         }
 
-        
+        public static void ResolveIntersectingChain(
+    List<Tuple<object, object>> targetChain,
+    List<Tuple<object, object>> intersections,
+    ref List<Tuple<object, object>> emptyClusters)
+        {
+            foreach (var intersection in intersections)
+            {
+                // Найти индекс пересекающегося кортежа
+                var indexToReplace = targetChain.FindIndex(tuple => tuple.Equals(intersection));
+
+                if (indexToReplace == -1)
+                    continue; // Пересечение не найдено в цепочке, пропустить
+
+                if (emptyClusters.Count < 1)
+                {
+                    throw new InvalidOperationException("Недостаточно пустых кластеров для замены пересечений.");
+                }
+
+                // Определить начальное и конечное значения для нового кортежа
+                object startValue = emptyClusters[0].Item1;
+                object endValue = indexToReplace == targetChain.Count - 1 ? "eof" : emptyClusters[0].Item2;
+
+                // Создать новый кортеж для замены пересекающегося
+                var newTuple = Tuple.Create(startValue, endValue);
+
+                // Обновить предыдущий кортеж, если он существует
+                if (indexToReplace > 0)
+                {
+                    var previousTuple = targetChain[indexToReplace - 1];
+                    targetChain[indexToReplace - 1] = Tuple.Create(previousTuple.Item1, startValue);
+                }
+
+                targetChain[indexToReplace] = newTuple;
+
+                // Удалить использованный пустой кластер
+                emptyClusters.RemoveAt(0);
+            }
+
+            Console.WriteLine("\nНовая цепочка кластеров:");
+            foreach (var tuple in targetChain)
+            {
+                Console.WriteLine($"({tuple.Item1}, {tuple.Item2})");
+            }
+        }
     }
 }
